@@ -8,6 +8,7 @@ steps:
   - name: dockersock
     path: /var/run
   commands:
+  - until docker ps > /dev/null; do sleep 1; done
   - ./test
 
 - name: docker push autotag + latest
