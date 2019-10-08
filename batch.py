@@ -26,7 +26,7 @@ ALL_EXTENSIONS = [
 DATA_DIR = os.getenv('DATA', '/data')
 OCR_DIR = os.getenv('OCR', '/ocr')
 WORKER_COUNT = int(os.getenv('WORKER_COUNT', '3'))
-WORKER_CHUNKSIZE = int(os.getenv('WORKER_CHUNKSIZE', '66'))
+WORKER_CHUNKSIZE = int(os.getenv('WORKER_CHUNKSIZE', '10'))
 
 
 def walk_files():
@@ -82,7 +82,7 @@ def main():
     log.info('started')
 
     with multiprocessing.Pool(WORKER_COUNT) as p:
-        for r in p.imap_unordered(process, list(walk_files())):
+        for r in p.imap_unordered(process, list(walk_files()), WORKER_CHUNKSIZE):
             log.info('[%3.2f] %s', time.time() - t0, r)
             count += 1
 
