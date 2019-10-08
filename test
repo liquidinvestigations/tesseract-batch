@@ -1,0 +1,9 @@
+#!/bin/bash -ex
+
+docker build . --tag tesseract-batch
+git clean -xdf output
+docker run -it --user "$(id -u):$(id -g)" -v $(pwd)/test-files:/data -v $(pwd)/output:/ocr tesseract-batch
+
+grep -q "Probably you have uses for this" output/8d/2f/c6/8d2fc6d280b1385302910fd5162eaad2.txt
+grep -q "quick brown dog" output/a0/f1/24/a0f12445178beb6c1ae107ce64f8bb3e.txt
+grep -q "GitHub" output/b2/2e/27/b22e27811c95ff13697090f95a1c3335.txt
