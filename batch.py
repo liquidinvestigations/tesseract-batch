@@ -53,7 +53,7 @@ def process(image_path):
     output_stem = os.path.join(OCR_DIR, md5[0:2], md5[2:4], md5[4:6], md5)
     output_path = output_stem + '.pdf'
     if os.path.exists(output_path):
-        return '%s already exists, skipping' % output_path
+        return '%s skipped, output already exists' % image_path
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -71,9 +71,9 @@ def run_tesseract(image_path, output_stem):
     args = ['tesseract', image_path, output_stem, 'txt', 'pdf']
     try:
         subprocess.check_output(args, stderr=subprocess.STDOUT)
-        return '%s done (%s sec)' % (image_path, time.time() - t1)
+        return '%s done (%.2f sec)' % (image_path, time.time() - t1)
     except subprocess.CalledProcessError as e:
-        return '%s failed: %s (%s sec)' % (image_path, e, time.time() - t1)
+        return '%s failed: %s (%.2f sec)' % (image_path, e, time.time() - t1)
 
 
 def main():
@@ -86,7 +86,7 @@ def main():
             log.info('[%3.2f] %s', time.time() - t0, r)
             count += 1
 
-    log.info('done, %s documents', count)
+    log.info('done, %s documents in %s seconds', count, int(time.time() - t0))
 
 
 if __name__ == '__main__':
