@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/sh -ex
 
 docker build . --tag tesseract-batch
 git clean -xdf output

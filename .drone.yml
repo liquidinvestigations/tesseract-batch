@@ -1,5 +1,5 @@
 kind: pipeline
-name: publish to docker hub
+name: test and publish
 
 steps:
 - name: build and test
