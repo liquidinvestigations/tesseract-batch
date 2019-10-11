@@ -27,6 +27,7 @@ DATA_DIR = os.getenv('DATA', '/data')
 OCR_DIR = os.getenv('OCR', '/ocr')
 WORKER_COUNT = int(os.getenv('WORKER_COUNT', '3'))
 WORKER_CHUNKSIZE = int(os.getenv('WORKER_CHUNKSIZE', '10'))
+WORKER_NICE = os.getenv('WORKER_NICE', '7')
 
 
 def walk_files():
@@ -68,7 +69,7 @@ def process(image_path):
 
 def run_tesseract(image_path, output_stem):
     t1 = time.time()
-    args = ['tesseract', image_path, output_stem, 'txt', 'pdf']
+    args = ['nice', '-n', WORKER_NICE, 'tesseract', image_path, output_stem, 'txt', 'pdf']
     try:
         subprocess.check_output(args, stderr=subprocess.STDOUT)
         return '%s done (%.2f sec)' % (image_path, time.time() - t1)
