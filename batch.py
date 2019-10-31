@@ -4,7 +4,6 @@ import logging
 import multiprocessing
 import os
 import subprocess
-import tempfile
 import time
 
 
@@ -26,16 +25,35 @@ ALL_EXTENSIONS = [
 DATA_DIR = os.getenv('DATA', '/data')
 OCR_DIR = os.getenv('OCR', '/ocr')
 WORKER_COUNT = int(os.getenv('WORKER_COUNT', '3'))
-WORKER_CHUNKSIZE = int(os.getenv('WORKER_CHUNKSIZE', '10'))
+WORKER_CHUNKSIZE = int(os.getenv('WORKER_CHUNKSIZE', '1'))
 WORKER_NICE = os.getenv('WORKER_NICE', '7')
 
 
+def get_languages():
+    langs = subprocess.check_output(['tesseract', '--list-langs']).decode().split()
+    log.info('Tesseract has loaded %s languages.', len(langs))
+    return set(langs)
+
+
+ALL_LANGUAGES = get_languages()
+
+
 def walk_files():
-    for root, _, files in os.walk(os.path.abspath(DATA_DIR)):
-        for filename in files:
-            full_path = os.path.join(root, filename)
-            if os.path.splitext(full_path)[1] in ALL_EXTENSIONS:
-                yield full_path
+    for language in os.listdir(DATA_DIR):
+        language_path = os.path.abspath(os.path.join(DATA_DIR, language))
+        if not os.path.isdir(language_path):
+            log.warning("%s is not a directory", language_path)
+            continue
+        if language not in ALL_LANGUAGES:
+            log.warning("%s is not a valid language", language)
+            with open(os.path.join(language_path, 'OCR ERROR - INVALID LANGUAGE CODE'), 'w') as f:
+                f.write("liquidinvestigations/tesseract-batch: Language code %s is invalid!" % language)
+
+        for root, _, files in os.walk(language_path):
+            for filename in files:
+                full_path = os.path.join(root, filename)
+                if os.path.splitext(full_path)[1] in ALL_EXTENSIONS:
+                    yield language, full_path
 
 
 def pdf_to_tiff(pdf_path, tiff_path):
@@ -48,7 +66,9 @@ def pdf_to_tiff(pdf_path, tiff_path):
         return None
 
 
-def process(image_path):
+def process(args):
+    language, image_path = args
+
     md5 = subprocess.check_output(['md5sum', image_path]).decode('latin1').split(' ')[0]
 
     output_stem = os.path.join(OCR_DIR, md5[0:2], md5[2:4], md5[4:6], md5)
@@ -57,19 +77,16 @@ def process(image_path):
         return '%s skipped, output already exists' % image_path
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-    if os.path.splitext(image_path)[1] == '.pdf':
-        with tempfile.NamedTemporaryFile(suffix='.tiff') as f:
-            if not pdf_to_tiff(image_path, f.name):
-                return '%s could not be converted to tiff'
-            return run_tesseract(f.name, output_stem)
-    else:
-        return run_tesseract(image_path, output_stem)
+    return run_tesseract(image_path, output_path, language)
 
 
-def run_tesseract(image_path, output_stem):
+def run_tesseract(image_path, output_path, language):
     t1 = time.time()
-    args = ['nice', '-n', WORKER_NICE, 'tesseract', image_path, output_stem, 'txt', 'pdf']
+    args = [
+        'nice', '-n', WORKER_NICE,
+        'pdf2pdfocr.py', '-i', image_path, '-o', output_path,
+        '-l', language,
+    ]
     try:
         subprocess.check_output(args, stderr=subprocess.STDOUT)
         return '%s done (%.2f sec)' % (image_path, time.time() - t1)
@@ -78,16 +95,20 @@ def run_tesseract(image_path, output_stem):
 
 
 def main():
+    log.info('copying example files...')
+    subprocess.check_call(['cp', '-a', '/examples/.', DATA_DIR])
+
     t0 = time.time()
     count = 0
-    log.info('started')
+    log.info('copying done.')
+    log.info('workers started.')
 
     with multiprocessing.Pool(WORKER_COUNT) as p:
-        for r in p.imap_unordered(process, list(walk_files()), WORKER_CHUNKSIZE):
+        for r in p.imap_unordered(process, walk_files(), WORKER_CHUNKSIZE):
             log.info('[%3.2f] %s', time.time() - t0, r)
             count += 1
 
-    log.info('done, %s documents in %s seconds', count, int(time.time() - t0))
+    log.info('all done, %s documents in %s seconds', count, int(time.time() - t0))
 
 
 if __name__ == '__main__':

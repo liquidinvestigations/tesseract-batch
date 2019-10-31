@@ -1,7 +1,8 @@
-FROM tesseractshadow/tesseract4re
+FROM liquidinvestigations/pdf2pdfocr
 
-ENV DEBIAN_NONINTERACTIVE=true
-RUN apt-get -yqq update && apt-get -yqq install ghostscript
+# fall back to root, our collections are owned by root
+USER 0
 
 ADD batch.py .
+ADD examples /examples
 ENTRYPOINT ./batch.py

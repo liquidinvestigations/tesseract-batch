@@ -8,8 +8,20 @@ steps:
   - name: dockersock
     path: /var/run
   commands:
+  - apk update
+  - apk add pdfgrep
   - until docker ps > /dev/null; do sleep 1; done
   - ./test
+
+- name: docker push branch ${DRONE_COMMIT_BRANCH}
+  image: plugins/docker
+  settings:
+    repo: liquidinvestigations/tesseract-batch
+    tags: ${DRONE_COMMIT_BRANCH}
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
 
 - name: docker push autotag + latest
   image: plugins/docker

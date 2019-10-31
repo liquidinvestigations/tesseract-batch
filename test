@@ -2,11 +2,18 @@
 
 docker build . --tag tesseract-batch
 
-ls output && rm -rf output || true
+for dir in input output; do
+        ls $dir && rm -rf $dir || true
+        mkdir $dir
+done
+docker run --user "$(id -u):$(id -g)" \
+        -v $(pwd)/input:/data \
+        -v $(pwd)/output:/ocr \
+        tesseract-batch
 
-mkdir output
-docker run --user "$(id -u):$(id -g)" -v $(pwd)/test-files:/data -v $(pwd)/output:/ocr tesseract-batch
-
-grep -q "Probably you have uses for this" output/8d/2f/c6/8d2fc6d280b1385302910fd5162eaad2.txt
-grep -q "quick brown dog" output/a0/f1/24/a0f12445178beb6c1ae107ce64f8bb3e.txt
-grep -q "GitHub" output/b2/2e/27/b22e27811c95ff13697090f95a1c3335.txt
+ls input/invalid-language/OCR\ ERROR*
+pdfgrep -q "Probably you have uses for this" output/8d/2f/c6/8d2fc6d280b1385302910fd5162eaad2.pdf
+pdfgrep -q "quick brown dog" output/a0/f1/24/a0f12445178beb6c1ae107ce64f8bb3e.pdf
+pdfgrep -q "GitHub" output/b2/2e/27/b22e27811c95ff13697090f95a1c3335.pdf
+pdfgrep -q "500 lei" output/3c/16/24/3c162453757a36215b0feb43223c57a0.pdf
+pdfgrep -q "o cantitate de peste 5 buc. cearsafuri" output/7a/8d/fc/7a8dfc1cfbad3944f17ae002e2bae3b3.pdf
