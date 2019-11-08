@@ -1,0 +1,24 @@
+Tesseract Optical Character Recognition is enabled on this collection
+----------------------------------------------------------------------
+
+Please add document scans under a directory respective to the language:
+
+- `eng` - English
+- `deu` - German
+- `fra` - French
+- `ron` - Romanian
+- `fin` - Finnish
+- `nld` - Dutch, Flemish
+- `nor` - Norwegian
+
+You can create a directory if it doesn't exist.
+
+Tesseract supports more than 150 languages; you can find the language codes on their website[1].
+
+You can also chain two or more languages. Name the directory `eng+deu+fra` to use 3 language models.
+
+See the wiki article[2] and the code repository[3] for more details on this integration.
+
+[1]: https://github.com/tesseract-ocr/tesseract/wiki/Data-Files#data-files-for-version-400-november-29-2016
+[2]: https://github.com/liquidinvestigations/docs/wiki/Tesseract-Batch-OCR
+[3]: https://github.com/liquidinvestigations/hypothesis-h/pull/7
