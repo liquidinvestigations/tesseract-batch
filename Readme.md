@@ -8,16 +8,17 @@ file's md5 hash. The script should keep the CPU saturated until the process is
 done.
 
 
-Here's how to run it:
+Here's a script to run it inside a docker container:
 
-        ./run INPUT_DIR OUTPUT_DIR LANGUAGE
+        ./run INPUT_DIR OUTPUT_DIR LANGUAGE [WORKER_COUNT] [IMAGE]
 
 
-Configuration to the is done through envs:
+Configuration to the script (and therefore the container) is done through envs:
 
 - `OUTPUT_DIR` - data directory to walk for images/pdfs
-- `INPUT_DIR` - output directory
-- `LANGUAGE` - languages to run the OCR on, separated by the plus sign (`+`)
+- `INPUT_DIR` - input directory, default "/input"
+- `LANGUAGE` - languages to run the OCR on, separated by the plus sign (`+`), default "eng"
+- `WORKER_COUNT` - number of CPU cores to use, default max
 - `NICE` - parameter sent to the `nice` system utility for the OCR process, default 9
 
 

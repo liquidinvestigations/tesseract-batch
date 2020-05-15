@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import subprocess
 import time
+import tempfile
 
 
 log = multiprocessing.log_to_stderr()
@@ -21,7 +22,7 @@ INPUT = os.getenv('INPUT', '/input')
 OUTPUT = os.getenv('OUTPUT', '/output')
 NICE = int(os.getenv('NICE', '9'))
 LANGUAGE = os.getenv('LANGUAGE', 'eng')
-WORKER_COUNT = int(os.getenv('WORKER_COUNT', 0))
+WORKER_COUNT = int(os.getenv('WORKER_COUNT') or 0)
 if not WORKER_COUNT:
     WORKER_COUNT = multiprocessing.cpu_count()
 ALL_EXTENSIONS = [
@@ -74,18 +75,18 @@ def process(image_path):
 
 
 def run_tesseract(image_path, output_path):
-    tmp_output_path = output_path + '_tmp'
     t1 = time.time()
-    args = [
-        'nice', '-n', str(NICE),
-        'pdf2pdfocr.py', '-i', image_path, '-o', tmp_output_path,
-        '-l', LANGUAGE,
-        '-x', '--oem 1 --psm 1',
-        '-j', "%0.4f" % (1.0 / multiprocessing.cpu_count()),
-    ]
     try:
-        subprocess.check_call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        os.rename(tmp_output_path, output_path)
+        with tempfile.NamedTemporaryFile(prefix=output_path+'_tmp', delete=False) as f:
+            args = [
+                'nice', '-n', str(NICE),
+                'pdf2pdfocr.py', '-i', image_path, '-o', f.name,
+                '-l', LANGUAGE,
+                '-x', '--oem 1 --psm 1',
+                '-j', "%0.4f" % (1.0 / multiprocessing.cpu_count()),
+            ]
+            subprocess.check_call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            os.rename(f.name, output_path)
         return 'DONE (%.2f sec): %s ' % (time.time() - t1, image_path)
     except subprocess.CalledProcessError as e:
         return 'FAIL (%.2f sec): %s: %s' % (time.time() - t1, e, image_path)
