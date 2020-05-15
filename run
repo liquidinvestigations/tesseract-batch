@@ -15,7 +15,7 @@ else
         IMG="$4"
 fi
 
-exec docker run -it --user "$(id -u):$(id -g)" \
+exec docker run --user "$(id -u):$(id -g)" \
         -v $INPUT:/input \
         -v $OUTPUT:/output \
         -e "LANGUAGE=$LANGUAGE" \

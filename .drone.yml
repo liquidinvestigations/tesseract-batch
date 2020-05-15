@@ -9,7 +9,7 @@ steps:
     path: /var/run
   commands:
   - apk update
-  - apk add pdfgrep
+  - apk add pdfgrep bash
   - until docker ps > /dev/null; do sleep 1; done
   - ./test
 
