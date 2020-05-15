@@ -1,0 +1,22 @@
+#!/bin/bash -ex
+
+if [[ $# -lt 3 ]]; then
+        echo "usage: $0 INPUT OUTPUT LANGUAGE [DOCKERIMAGE]"
+        exit 2
+fi
+
+INPUT="$(readlink -f $1)"
+OUTPUT="$(readlink -f $2)"
+LANGUAGE="$3"
+
+if [[ -z "$4" ]]; then
+        IMG="liquidinvestigations/tesseract-batch"
+else
+        IMG="$4"
+fi
+
+exec docker run -it --user "$(id -u):$(id -g)" \
+        -v $INPUT:/input \
+        -v $OUTPUT:/output \
+        -e "LANGUAGE=$LANGUAGE" \
+        $IMG
