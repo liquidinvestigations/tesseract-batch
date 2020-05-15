@@ -21,6 +21,9 @@ INPUT = os.getenv('INPUT', '/input')
 OUTPUT = os.getenv('OUTPUT', '/output')
 NICE = int(os.getenv('NICE', '9'))
 LANGUAGE = os.getenv('LANGUAGE', 'eng')
+WORKER_COUNT = int(os.getenv('WORKER_COUNT', 0))
+if not WORKER_COUNT:
+    WORKER_COUNT = multiprocessing.cpu_count()
 ALL_EXTENSIONS = [
     '.bmp',
     '.jfif',
@@ -78,7 +81,7 @@ def run_tesseract(image_path, output_path):
         'pdf2pdfocr.py', '-i', image_path, '-o', tmp_output_path,
         '-l', LANGUAGE,
         '-x', '--oem 1 --psm 1',
-        '-j', '0.2',
+        '-j', "%0.4f" % (1.0 / multiprocessing.cpu_count()),
     ]
     try:
         subprocess.check_call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -92,7 +95,7 @@ def main():
     t0 = time.time()
     count = 0
     log.info('workers started.')
-    with multiprocessing.Pool(5) as p:
+    with multiprocessing.Pool(WORKER_COUNT) as p:
         for r in p.imap_unordered(process, walk_files(), 1):
             log.info('[%3.2f] %s', time.time() - t0, r)
             count += 1
