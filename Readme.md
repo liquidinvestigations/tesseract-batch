@@ -2,25 +2,23 @@
 
 
 This docker image consists of a Python script that runs tesseract on all images
-and pdfs found at `$DATA_DIR/<language-code>`, outputting the results in the
-`$OCR_DIR` directory.
+and PDFs found at `/input` into PDF files with OCRed text mounted on `/output`.
+One PDF file is created for each input file. The file is named after the input
+file's md5 hash. The script should keep the CPU saturated until the process is
+done.
 
 
 Here's how to run it:
 
-        docker run \
-                --user "$(id -u):$(id -g)" \
-                -v $(pwd)/test-files:/data \
-                -v $(pwd)/output:/ocr \
-                liquidinvestigations/tesseract-batch
+        ./run INPUT_DIR OUTPUT_DIR LANGUAGE
 
 
-Configuration is done through envs:
+Configuration to the is done through envs:
 
-- `DATA_DIR` - data directory to walk for images/pdfs
-- `OCR_DIR` - output directory
-- `WORKER_COUNT` - process pool size
-- `WORKER_CHUNKSIZE` - chunk size for `multiprocessing.Pool.imap_unordered`
+- `OUTPUT_DIR` - data directory to walk for images/pdfs
+- `INPUT_DIR` - output directory
+- `LANGUAGE` - languages to run the OCR on, separated by the plus sign (`+`)
+- `NICE` - parameter sent to the `nice` system utility for the OCR process, default 9
 
 
 ## Supported languages
@@ -35,4 +33,4 @@ See the [Tesseract 4.0 documentation](https://github.com/tesseract-ocr/tesseract
 - `nld` - Dutch, Flemish
 - `nor` - Norwegian
 
-You can also chain two or more languages. Name the directory `eng+deu+fra` to use 3 language models.
+You can also chain two or more languages. Use `eng+deu+fra` to use the best result for each document.

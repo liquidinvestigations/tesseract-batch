@@ -7,7 +7,7 @@ for dir in input output; do
         mkdir $dir
 done
 cp -a examples/* input
-./run input output 'eng+ron' 2 tesseract-batch
+./run input output 'eng+ron' tesseract-batch
 
 pdfgrep -q "Probably you have uses for this" output/8d/2f/c6/8d2fc6d280b1385302910fd5162eaad2.pdf
 pdfgrep -q "quick brown dog" output/a0/f1/24/a0f12445178beb6c1ae107ce64f8bb3e.pdf
