@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
 import logging
+import multiprocessing
 import os
 import subprocess
 import time
 
 
-logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.DEBUG)
+log = multiprocessing.log_to_stderr()
+log.setLevel(logging.INFO)
 
 
 def get_languages():
     langs = subprocess.check_output("tesseract --list-langs | tail -n +2", shell=True).decode().split()
-    logging.info('Tesseract has loaded %s languages.', len(langs))
+    log.info('Tesseract has loaded %s languages.', len(langs))
     return set(langs)
 
 
@@ -38,7 +40,7 @@ assert os.path.isdir(OUTPUT)
 
 
 def walk_files():
-    logging.info('walking through files...')
+    log.info('walking through files...')
     for root, _, files in os.walk(INPUT):
         for filename in files:
             full_path = os.path.join(root, filename)
@@ -52,7 +54,7 @@ def pdf_to_tiff(pdf_path, tiff_path):
         subprocess.check_output(args, stderr=subprocess.STDOUT)
         return True
     except subprocess.CalledProcessError as e:
-        logging.exception(e)
+        log.exception(e)
         return None
 
 
@@ -62,37 +64,40 @@ def process(image_path):
     output_stem = os.path.join(OUTPUT, md5[0:2], md5[2:4], md5[4:6], md5)
     output_path = output_stem + '.pdf'
     if os.path.exists(output_path):
-        return '%s skipped, output already exists' % image_path
+        return 'SKIP %s, output already exists' % image_path
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     return run_tesseract(image_path, output_path)
 
 
 def run_tesseract(image_path, output_path):
+    tmp_output_path = output_path + '_tmp'
     t1 = time.time()
     args = [
         'nice', '-n', str(NICE),
-        'pdf2pdfocr.py', '-i', image_path, '-o', output_path,
+        'pdf2pdfocr.py', '-i', image_path, '-o', tmp_output_path,
         '-l', LANGUAGE,
         '-x', '--oem 1 --psm 1',
+        '-j', '0.2',
     ]
     try:
-        subprocess.run(args, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return '%s done (%.2f sec)' % (image_path, time.time() - t1)
+        subprocess.check_call(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.rename(tmp_output_path, output_path)
+        return 'DONE (%.2f sec): %s ' % (time.time() - t1, image_path)
     except subprocess.CalledProcessError as e:
-        return '%s failed: %s (%.2f sec)' % (image_path, e, time.time() - t1)
+        return 'FAIL (%.2f sec): %s: %s' % (time.time() - t1, e, image_path)
 
 
 def main():
     t0 = time.time()
     count = 0
-    logging.info('workers started.')
+    log.info('workers started.')
+    with multiprocessing.Pool(5) as p:
+        for r in p.imap_unordered(process, walk_files(), 1):
+            log.info('[%3.2f] %s', time.time() - t0, r)
+            count += 1
 
-    for r in map(process, walk_files()):
-        logging.info('[%3.2f] %s', time.time() - t0, r)
-        count += 1
-
-    logging.info('all done, %s documents in %s seconds', count, int(time.time() - t0))
+    log.info('all done, %s documents in %s seconds', count, int(time.time() - t0))
 
 
 if __name__ == '__main__':

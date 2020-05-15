@@ -1,6 +1,6 @@
 FROM liquidinvestigations/pdf2pdfocr
 
-ENV OMP_THREAD_LIMIT 1
+ENV OMP_THREAD_LIMIT 2
 # fall back to root, our collections are owned by root
 USER 0
 
