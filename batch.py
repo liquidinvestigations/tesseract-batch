@@ -6,21 +6,19 @@ import subprocess
 import time
 
 
-log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+logging.basicConfig(format='%(asctime)-15s %(message)s', level=logging.DEBUG)
+
+
+def get_languages():
+    langs = subprocess.check_output("tesseract --list-langs | tail -n +2", shell=True).decode().split()
+    logging.info('Tesseract has loaded %s languages.', len(langs))
+    return set(langs)
+
 
 INPUT = os.getenv('INPUT', '/input')
 OUTPUT = os.getenv('OUTPUT', '/output')
 NICE = int(os.getenv('NICE', '9'))
 LANGUAGE = os.getenv('LANGUAGE', 'eng')
-
-
-def get_languages():
-    langs = subprocess.check_output("tesseract --list-langs | tail -n +2", shell=True).decode().split()
-    log.info('Tesseract has loaded %s languages.', len(langs))
-    return set(langs)
-
-
 ALL_EXTENSIONS = [
     '.bmp',
     '.jfif',
@@ -35,9 +33,12 @@ ALL_EXTENSIONS = [
 ALL_LANGUAGES = get_languages()
 for code in LANGUAGE.split('+'):
     assert code in ALL_LANGUAGES
+assert os.path.isdir(INPUT)
+assert os.path.isdir(OUTPUT)
 
 
 def walk_files():
+    logging.info('walking through files...')
     for root, _, files in os.walk(INPUT):
         for filename in files:
             full_path = os.path.join(root, filename)
@@ -51,7 +52,7 @@ def pdf_to_tiff(pdf_path, tiff_path):
         subprocess.check_output(args, stderr=subprocess.STDOUT)
         return True
     except subprocess.CalledProcessError as e:
-        log.exception(e)
+        logging.exception(e)
         return None
 
 
@@ -85,13 +86,13 @@ def run_tesseract(image_path, output_path):
 def main():
     t0 = time.time()
     count = 0
-    log.info('workers started.')
+    logging.info('workers started.')
 
     for r in map(process, walk_files()):
-        log.info('[%3.2f] %s', time.time() - t0, r)
+        logging.info('[%3.2f] %s', time.time() - t0, r)
         count += 1
 
-    log.info('all done, %s documents in %s seconds', count, int(time.time() - t0))
+    logging.info('all done, %s documents in %s seconds', count, int(time.time() - t0))
 
 
 if __name__ == '__main__':
